@@ -12,17 +12,37 @@
 ## Usage
 - download or build release copy-1.3.jar
 - install JRE 8+
-- `java -jar copy-1.3.jar <path>`
+- `java -jar copy-1.3.jar [options] <path>`
+
+## Options
+- `-h`, `--help`: show usage
+- `-v`, `--version`: show version
+- `--dry-run`: print planned operations without writing files
+- `--out-dir <dir>`: write output to the specified directory
+- `--replace`: replace target files if they already exist
+- `--skip-if-exists`: skip files that already exist
+- `--name-strategy <indexed|timestamp|uuid>`: configure output name generation strategy (default: `indexed`)
 
 ## Output path naming
 - output is created in the same parent directory as input
-- naming format: `yyyy-MM-dd-HH-mm-ss-SSS-<originalName>`
-- example input `D:\foo\bar\demo.txt` -> output `D:\foo\bar\2026-05-03-16-49-15-610-demo.txt`
+- `indexed` strategy (default): keep original name first; if exists, append English-parentheses suffix like ` (1)`, ` (2)`, ...
+- `timestamp` strategy: prepend timestamp like `yyyy-MM-dd-HH-mm-ss-SSS-`
+- `uuid` strategy: prepend random UUID like `550e8400-e29b-41d4-a716-446655440000-`
+- examples:
+  - indexed: `D:\foo\bar\demo.txt` -> `D:\foo\bar\demo (1).txt`
+  - timestamp: `D:\foo\bar\demo.txt` -> `D:\foo\bar\2026-05-03-18-23-01-123-demo.txt`
+  - uuid: `D:\foo\bar\demo.txt` -> `D:\foo\bar\550e8400-e29b-41d4-a716-446655440000-demo.txt`
 
 ## Overwrite / conflict policy
-- copy uses `Files.copy` without replace mode
-- if target path already exists, program exits with non-zero code and prints error to stderr
-- invalid arguments/path also return non-zero code
+- default: if target path exists, copy fails with non-zero exit code
+- `--replace`: overwrite existing target files
+- `--skip-if-exists`: keep existing files and skip copy
+- `--replace` and `--skip-if-exists` cannot be used together
+
+## Security / safety defaults
+- symbolic link directories/files are skipped during directory copy
+- directory walk does not follow symbolic links
+- invalid arguments/path return non-zero exit code
 
 ## Examples
 ### copy

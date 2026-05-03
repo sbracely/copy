@@ -27,7 +27,7 @@ class MainTest {
 
         List<Path> copiedFiles = Files.list(tempDir)
                 .filter(path -> !path.equals(sourceFile))
-                .filter(path -> path.getFileName().toString().endsWith("-demo.txt"))
+                .filter(path -> path.getFileName().toString().equals("demo (1).txt"))
                 .collect(Collectors.toList());
         assertEquals(1, copiedFiles.size());
         assertEquals("hello", new String(Files.readAllBytes(copiedFiles.get(0)), StandardCharsets.UTF_8));
@@ -48,7 +48,7 @@ class MainTest {
         List<Path> copiedDirs = Files.list(tempDir)
                 .filter(Files::isDirectory)
                 .filter(path -> !path.equals(sourceDir))
-                .filter(path -> path.getFileName().toString().endsWith("-src"))
+                .filter(path -> path.getFileName().toString().equals("src (1)"))
                 .collect(Collectors.toList());
         assertEquals(1, copiedDirs.size());
 
@@ -66,8 +66,105 @@ class MainTest {
         assertEquals(2, runResult.exitCode);
     }
 
+    @Test
+    void shouldReturnOkForHelp() {
+        RunResult runResult = run("--help");
+        assertEquals(0, runResult.exitCode);
+    }
+
+    @Test
+    void shouldSupportDryRun() throws IOException {
+        Path sourceFile = tempDir.resolve("dryrun.txt");
+        Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));
+
+        RunResult runResult = run("--dry-run", sourceFile.toString());
+
+        assertEquals(0, runResult.exitCode);
+        long generatedFileCount = Files.list(tempDir)
+                .filter(path -> !path.equals(sourceFile))
+                .filter(path -> path.getFileName().toString().contains("dryrun"))
+                .count();
+        assertEquals(0, generatedFileCount);
+    }
+
+    @Test
+    void shouldOutputToSpecifiedDirectory() throws IOException {
+        Path sourceFile = tempDir.resolve("withOutDir.txt");
+        Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));
+        Path outDir = tempDir.resolve("output");
+
+        RunResult runResult = run("--out-dir", outDir.toString(), sourceFile.toString());
+
+        assertEquals(0, runResult.exitCode);
+        assertTrue(Files.exists(outDir));
+        long generatedFileCount = Files.list(outDir)
+                .filter(path -> path.getFileName().toString().equals("withOutDir.txt"))
+                .count();
+        assertEquals(1, generatedFileCount);
+    }
+
+    @Test
+    void shouldAppendIndexWhenOutputFileNameAlreadyExists() throws IOException {
+        Path sourceFile = tempDir.resolve("name.txt");
+        Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));
+        Path outDir = tempDir.resolve("output");
+        Files.createDirectories(outDir);
+        Files.write(outDir.resolve("name.txt"), "existing".getBytes(StandardCharsets.UTF_8));
+
+        RunResult runResult = run("--out-dir", outDir.toString(), sourceFile.toString());
+
+        assertEquals(0, runResult.exitCode);
+        assertTrue(Files.exists(outDir.resolve("name.txt")));
+        assertTrue(Files.exists(outDir.resolve("name (1).txt")));
+    }
+
+    @Test
+    void shouldSupportTimestampNameStrategy() throws IOException {
+        Path sourceFile = tempDir.resolve("ts.txt");
+        Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));
+        Path outDir = tempDir.resolve("output-ts");
+
+        RunResult runResult = run("--name-strategy", "timestamp", "--out-dir", outDir.toString(), sourceFile.toString());
+
+        assertEquals(0, runResult.exitCode);
+        long generatedFileCount = Files.list(outDir)
+                .filter(path -> path.getFileName().toString().endsWith("-ts.txt"))
+                .count();
+        assertEquals(1, generatedFileCount);
+    }
+
+    @Test
+    void shouldSupportUuidNameStrategy() throws IOException {
+        Path sourceFile = tempDir.resolve("uuid.txt");
+        Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));
+        Path outDir = tempDir.resolve("output-uuid");
+
+        RunResult runResult = run("--name-strategy", "uuid", "--out-dir", outDir.toString(), sourceFile.toString());
+
+        assertEquals(0, runResult.exitCode);
+        long generatedFileCount = Files.list(outDir)
+                .filter(path -> path.getFileName().toString().endsWith("-uuid.txt"))
+                .count();
+        assertEquals(1, generatedFileCount);
+    }
+
+    @Test
+    void shouldReturnErrorForUnsupportedNameStrategy() throws IOException {
+        Path sourceFile = tempDir.resolve("bad-strategy.txt");
+        Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));
+
+        RunResult runResult = run("--name-strategy", "abc", sourceFile.toString());
+
+        assertEquals(2, runResult.exitCode);
+    }
+
     private RunResult run(Path inputPath) throws IOException {
-        int exitCode = Main.run(new String[]{inputPath.toString()});
+        int exitCode = CopyCli.run(new String[]{inputPath.toString()});
+        return new RunResult(exitCode);
+    }
+
+    private RunResult run(String... args) {
+        int exitCode = CopyCli.run(args);
         return new RunResult(exitCode);
     }
 
