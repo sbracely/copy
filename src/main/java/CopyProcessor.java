@@ -15,15 +15,22 @@ final class CopyProcessor {
         this.logger = logger;
     }
 
-    void copy(Path inputPath, Path outputPath, CopyOptions options) throws IOException {
+    CopyStats copy(Path inputPath, Path outputPath, CopyOptions options) throws IOException {
         if (Files.isDirectory(inputPath)) {
-            copyDirectory(inputPath, outputPath, options);
+            return copyDirectory(inputPath, outputPath, options);
         } else {
-            copyFile(inputPath, outputPath, options);
+            final CopyStats copyStats = new CopyStats();
+            final CopyOutcome copyOutcome = copyFile(inputPath, outputPath, options);
+            if (copyOutcome == CopyOutcome.CREATED) {
+                copyStats.createdFileCount++;
+            } else {
+                copyStats.skippedFileCount++;
+            }
+            return copyStats;
         }
     }
 
-    private void copyDirectory(Path inputPath, Path outputPath, CopyOptions options) throws IOException {
+    private CopyStats copyDirectory(Path inputPath, Path outputPath, CopyOptions options) throws IOException {
         final CopyStats copyStats = new CopyStats();
 
         Files.walkFileTree(inputPath, new SimpleFileVisitor<Path>() {
@@ -39,6 +46,7 @@ final class CopyProcessor {
                     logger.info("dry run create directory: " + directoryPath);
                 } else {
                     Files.createDirectories(directoryPath);
+                    logger.info("created directory: " + directoryPath);
                 }
                 copyStats.createdDirectoryCount++;
                 return FileVisitResult.CONTINUE;
@@ -68,12 +76,7 @@ final class CopyProcessor {
                 return FileVisitResult.CONTINUE;
             }
         });
-
-        logger.info("created directory count: " + copyStats.createdDirectoryCount);
-        logger.info("created file count: " + copyStats.createdFileCount);
-        logger.info("skipped file count: " + copyStats.skippedFileCount);
-        logger.info("skipped symbolic link count: " + copyStats.skippedSymbolicLinkCount);
-        logger.info("visit file failed count: " + copyStats.visitFileFailedCount);
+        return copyStats;
     }
 
     private CopyOutcome copyFile(Path inputPath, Path outputPath, CopyOptions options) throws IOException {
@@ -103,11 +106,19 @@ final class CopyProcessor {
         SKIPPED
     }
 
-    private static class CopyStats {
-        private int createdDirectoryCount;
-        private int createdFileCount;
-        private int skippedFileCount;
-        private int skippedSymbolicLinkCount;
-        private int visitFileFailedCount;
+    static class CopyStats {
+        int createdDirectoryCount;
+        int createdFileCount;
+        int skippedFileCount;
+        int skippedSymbolicLinkCount;
+        int visitFileFailedCount;
+
+        void merge(CopyStats other) {
+            this.createdDirectoryCount += other.createdDirectoryCount;
+            this.createdFileCount += other.createdFileCount;
+            this.skippedFileCount += other.skippedFileCount;
+            this.skippedSymbolicLinkCount += other.skippedSymbolicLinkCount;
+            this.visitFileFailedCount += other.visitFileFailedCount;
+        }
     }
 }

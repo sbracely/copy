@@ -39,6 +39,7 @@ public class CopyCli {
 
             final CopyProcessor copyProcessor = new CopyProcessor(LOGGER);
             final Set<Path> reservedOutputPaths = new HashSet<>();
+            final CopyProcessor.CopyStats totalCopyStats = new CopyProcessor.CopyStats();
             for (Path inputPath : options.inputPaths) {
                 final Path outputPath = OutputPathResolver.buildOutputPath(
                         inputPath,
@@ -46,8 +47,10 @@ public class CopyCli {
                         options.nameStrategy,
                         reservedOutputPaths
                 );
-                copyProcessor.copy(inputPath, outputPath, options);
+                CopyProcessor.CopyStats copyStats = copyProcessor.copy(inputPath, outputPath, options);
+                totalCopyStats.merge(copyStats);
             }
+            logCopySummary(totalCopyStats);
             LOGGER.info("finish");
             return ExitCodes.OK;
         } catch (CopyCliException e) {
@@ -57,5 +60,13 @@ public class CopyCli {
             LOGGER.log(Level.SEVERE, "error: I/O failure: " + e.getMessage(), e);
             return ExitCodes.IO_ERROR;
         }
+    }
+
+    private static void logCopySummary(CopyProcessor.CopyStats copyStats) {
+        LOGGER.info("created directory count: " + copyStats.createdDirectoryCount);
+        LOGGER.info("created file count: " + copyStats.createdFileCount);
+        LOGGER.info("skipped file count: " + copyStats.skippedFileCount);
+        LOGGER.info("skipped symbolic link count: " + copyStats.skippedSymbolicLinkCount);
+        LOGGER.info("visit file failed count: " + copyStats.visitFileFailedCount);
     }
 }

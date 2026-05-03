@@ -164,12 +164,35 @@ class MainTest {
     }
 
     @Test
+    void shouldHandleMergedPathAndOptionTokenFromPowerShell() throws IOException {
+        Path sourceFile = tempDir.resolve("original-copy-1.3 (1).jar");
+        Files.write(sourceFile, "x".getBytes(StandardCharsets.UTF_8));
+        Path sourceDir = tempDir.resolve("classes (1)");
+        Files.createDirectories(sourceDir);
+        Files.write(sourceDir.resolve("a.txt"), "a".getBytes(StandardCharsets.UTF_8));
+        Path outDir = tempDir.resolve("test");
+
+        String mergedToken = sourceDir.toString() + "\" --out-dir " + outDir.toString();
+        RunResult runResult = run(sourceFile.toString(), mergedToken);
+
+        assertEquals(0, runResult.exitCode);
+        assertTrue(Files.exists(outDir.resolve("original-copy-1.3 (1).jar")));
+        assertTrue(Files.exists(outDir.resolve("classes (1)")));
+    }
+
+    @Test
     void shouldReturnErrorForUnsupportedNameStrategy() throws IOException {
         Path sourceFile = tempDir.resolve("bad-strategy.txt");
         Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));
 
         RunResult runResult = run("--name-strategy", "abc", sourceFile.toString());
 
+        assertEquals(2, runResult.exitCode);
+    }
+
+    @Test
+    void shouldReturnErrorForMalformedQuotedPathToken() {
+        RunResult runResult = run("bad\"path");
         assertEquals(2, runResult.exitCode);
     }
 
