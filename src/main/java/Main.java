@@ -1,60 +1,84 @@
-import java.io.*;
+import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Main {
-    private static Path INPUT_PATH;
+    private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
+    private static final int EXIT_OK = 0;
+    private static final int EXIT_INVALID_INPUT = 2;
+    private static final int EXIT_IO_ERROR = 3;
 
-    private static Path OUTPUT_PATH;
-
-    public static void main(String[] args) throws IOException {
-
-        processOptionValues(args);
-
-        generateOutputPath();
-
-        if (Files.isDirectory(INPUT_PATH)) {
-            copyDirectory();
-        } else {
-            copyFile(INPUT_PATH, OUTPUT_PATH);
+    public static void main(String[] args) {
+        final int exitCode = run(args);
+        if (exitCode != EXIT_OK) {
+            System.exit(exitCode);
         }
-
-        System.out.println("finish");
     }
 
-    private static void generateOutputPath() {
-        OUTPUT_PATH = INPUT_PATH.getParent().resolve(LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS-")) + INPUT_PATH.getFileName());
+    static int run(String[] args) {
+        try {
+            final Path inputPath = parseInputPath(args);
+            final Path outputPath = buildOutputPath(inputPath);
+
+            if (Files.isDirectory(inputPath)) {
+                copyDirectory(inputPath, outputPath);
+            } else {
+                copyFile(inputPath, outputPath);
+            }
+
+            LOGGER.info("finish");
+            return EXIT_OK;
+        } catch (AppException e) {
+            LOGGER.severe("error: " + e.getMessage());
+            return e.exitCode;
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "error: I/O failure: " + e.getMessage(), e);
+            return EXIT_IO_ERROR;
+        }
     }
 
-    private static void processOptionValues(String[] args) {
-        System.out.println("params = " + Arrays.toString(args));
+    private static Path parseInputPath(String[] args) throws AppException {
+        LOGGER.log(Level.INFO, "params = {0}", Arrays.toString(args));
 
         if (args.length != 1) {
-            throw new RuntimeException("require ONE path");
+            throw new AppException(EXIT_INVALID_INPUT, "require ONE path");
         }
 
-        System.out.println("path = " + args[0]);
-        INPUT_PATH = Paths.get(args[0]).toAbsolutePath();
-        if (!Files.exists(INPUT_PATH)) {
-            throw new RuntimeException("input path is not exists");
+        LOGGER.log(Level.INFO, "path = {0}", args[0]);
+        final Path inputPath = Paths.get(args[0]).toAbsolutePath();
+        if (!Files.exists(inputPath)) {
+            throw new AppException(EXIT_INVALID_INPUT, "input path does not exist");
         }
+        return inputPath;
     }
 
-    private static void copyDirectory() throws IOException {
+    private static Path buildOutputPath(Path inputPath) throws AppException {
+        final Path parentPath = inputPath.getParent();
+        if (parentPath == null) {
+            throw new AppException(EXIT_INVALID_INPUT, "input path must have a parent directory");
+        }
+        return parentPath.resolve(LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS-")) + inputPath.getFileName());
+    }
+
+    private static void copyDirectory(Path inputPath, Path outputPath) throws IOException {
         final List<Path> createDirectoryList = new LinkedList<>();
         final List<Path> createFileList = new LinkedList<>();
         final List<Path> visitFileFailedList = new LinkedList<>();
 
-        final Pattern pattern = Pattern.compile(INPUT_PATH.toString(), Pattern.LITERAL);
-        final String quoteReplacement = Matcher.quoteReplacement(OUTPUT_PATH.toString());
+        final Pattern pattern = Pattern.compile(inputPath.toString(), Pattern.LITERAL);
+        final String quoteReplacement = Matcher.quoteReplacement(outputPath.toString());
 
-        Files.walkFileTree(INPUT_PATH, new SimpleFileVisitor<Path>() {
+        Files.walkFileTree(inputPath, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 final Path directoryPath = getTargetPath(dir);
@@ -73,8 +97,7 @@ public class Main {
 
             @Override
             public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                System.err.println("visit file failed path = " + file);
-                exc.printStackTrace();
+                LOGGER.log(Level.WARNING, "visit file failed path = " + file, exc);
                 visitFileFailedList.add(file);
                 return FileVisitResult.CONTINUE;
             }
@@ -90,20 +113,29 @@ public class Main {
             }
         });
 
-        System.out.println("create directory count = " + createDirectoryList.size());
-        createDirectoryList.forEach(System.out::println);
+        LOGGER.info("create directory count = " + createDirectoryList.size());
+        createDirectoryList.forEach(path -> LOGGER.info(path.toString()));
 
-        System.out.println("create file count = " + createFileList.size());
-        createFileList.forEach(System.out::println);
+        LOGGER.info("create file count = " + createFileList.size());
+        createFileList.forEach(path -> LOGGER.info(path.toString()));
 
-        System.out.println("visit file failed count = " + visitFileFailedList.size());
-        visitFileFailedList.forEach(System.err::println);
+        LOGGER.info("visit file failed count = " + visitFileFailedList.size());
+        visitFileFailedList.forEach(path -> LOGGER.warning(path.toString()));
 
     }
 
     private static void copyFile(Path inputPath, Path outputPath) throws IOException {
         Files.copy(inputPath, outputPath);
-        System.out.println("create file : " + outputPath);
+        LOGGER.info("create file : " + outputPath);
+    }
+
+    private static class AppException extends Exception {
+        private final int exitCode;
+
+        private AppException(int exitCode, String message) {
+            super(message);
+            this.exitCode = exitCode;
+        }
     }
 
 }
