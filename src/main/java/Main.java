@@ -1,5 +1,3 @@
-import org.apache.commons.cli.*;
-
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -10,22 +8,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Main {
-    private static final Option OPT_ENCRYPT = Option.builder("e")
-            .longOpt("encrypt")
-            .desc("encrypt file")
-            .build();
-
-    private static final Options OPTIONS = new Options().addOption(OPT_ENCRYPT);
-
-    private static final DefaultParser DEFAULT_PARSE = new DefaultParser();
-
     private static Path INPUT_PATH;
 
     private static Path OUTPUT_PATH;
 
-    private static boolean OPT_ENCRYPT_VALUE = false;
-
-    public static void main(String[] args) throws IOException, ParseException {
+    public static void main(String[] args) throws IOException {
 
         processOptionValues(args);
 
@@ -45,19 +32,15 @@ public class Main {
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss-SSS-")) + INPUT_PATH.getFileName());
     }
 
-    private static void processOptionValues(String[] args) throws ParseException {
+    private static void processOptionValues(String[] args) {
         System.out.println("params = " + Arrays.toString(args));
 
-        final CommandLine commandLine = DEFAULT_PARSE.parse(OPTIONS, args);
-        OPT_ENCRYPT_VALUE = commandLine.hasOption(OPT_ENCRYPT);
-
-        final String[] commandLinArgs = commandLine.getArgs();
-        if (commandLinArgs.length != 1) {
+        if (args.length != 1) {
             throw new RuntimeException("require ONE path");
         }
 
-        System.out.println("path = " + commandLinArgs[0]);
-        INPUT_PATH = Paths.get(args[args.length - 1]).toAbsolutePath();
+        System.out.println("path = " + args[0]);
+        INPUT_PATH = Paths.get(args[0]).toAbsolutePath();
         if (!Files.exists(INPUT_PATH)) {
             throw new RuntimeException("input path is not exists");
         }
@@ -119,23 +102,7 @@ public class Main {
     }
 
     private static void copyFile(Path inputPath, Path outputPath) throws IOException {
-        if (OPT_ENCRYPT_VALUE) {
-            try (
-                    final FileInputStream fileInputStream = new FileInputStream(inputPath.toFile());
-                    final BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
-                    final FileOutputStream fileOutputStream = new FileOutputStream(outputPath.toFile());
-                    final BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
-            ) {
-                int n;
-                while ((n = bufferedInputStream.read()) != -1) {
-                    bufferedOutputStream.write(255 - n);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            Files.copy(inputPath, outputPath);
-        }
+        Files.copy(inputPath, outputPath);
         System.out.println("create file : " + outputPath);
     }
 
