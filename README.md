@@ -12,7 +12,7 @@
 ## Usage
 - download or build release copy-1.3.jar
 - install JRE 8+
-- `java -jar copy-1.3.jar [options] <path>`
+- `java -jar copy-1.3.jar [options] <path...>`
 
 ## Options
 - `-h`, `--help`: show usage
@@ -48,7 +48,9 @@
 ### copy
 - `java -jar copy-1.3.jar fileName.suffix`
 - `java -jar copy-1.3.jar "file name.suffix"`
+- `java -jar copy-1.3.jar fileA.txt fileB.txt`
 - `java -jar copy-1.3.jar directoryName`
+- `java -jar copy-1.3.jar directoryA directoryB`
 - `java -jar copy-1.3.jar D:\foo\bar\fileName.suffix`
 - `java -jar copy-1.3.jar D:\foo\bar\directoryName`
 - `java -jar copy-1.3.jar /home/foo/bar/directoryName`

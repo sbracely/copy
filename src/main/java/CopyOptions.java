@@ -1,7 +1,9 @@
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 final class CopyOptions {
-    Path inputPath;
+    final List<Path> inputPaths = new ArrayList<>();
     Path outputDir;
     NameStrategy nameStrategy = NameStrategy.INDEXED;
     boolean dryRun;

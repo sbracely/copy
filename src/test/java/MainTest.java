@@ -149,6 +149,21 @@ class MainTest {
     }
 
     @Test
+    void shouldCopyMultipleInputsInOneCommand() throws IOException {
+        Path file1 = tempDir.resolve("multi-a.txt");
+        Path file2 = tempDir.resolve("multi-b.txt");
+        Files.write(file1, "a".getBytes(StandardCharsets.UTF_8));
+        Files.write(file2, "b".getBytes(StandardCharsets.UTF_8));
+        Path outDir = tempDir.resolve("multi-output");
+
+        RunResult runResult = run("--out-dir", outDir.toString(), file1.toString(), file2.toString());
+
+        assertEquals(0, runResult.exitCode);
+        assertTrue(Files.exists(outDir.resolve("multi-a.txt")));
+        assertTrue(Files.exists(outDir.resolve("multi-b.txt")));
+    }
+
+    @Test
     void shouldReturnErrorForUnsupportedNameStrategy() throws IOException {
         Path sourceFile = tempDir.resolve("bad-strategy.txt");
         Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));

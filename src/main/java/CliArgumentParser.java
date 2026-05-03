@@ -54,24 +54,20 @@ final class CliArgumentParser {
         }
 
         if (options.showHelp || options.showVersion) {
-            if (positionalArgs.size() > 1) {
-                throw new CopyCliException(ExitCodes.INVALID_INPUT, "too many paths");
-            }
-            if (positionalArgs.size() == 1) {
-                options.inputPath = parseInputPath(positionalArgs.get(0), logger);
-            }
             return options;
         }
 
-        if (positionalArgs.size() != 1) {
-            throw new CopyCliException(ExitCodes.INVALID_INPUT, "require ONE path");
+        if (positionalArgs.isEmpty()) {
+            throw new CopyCliException(ExitCodes.INVALID_INPUT, "require at least ONE path");
         }
-        options.inputPath = parseInputPath(positionalArgs.get(0), logger);
+        for (String positionalArg : positionalArgs) {
+            options.inputPaths.add(parseInputPath(positionalArg, logger));
+        }
         return options;
     }
 
     static void printHelp(Logger logger) {
-        logger.info("usage: java -jar copy-1.3.jar [options] <path>");
+        logger.info("usage: java -jar copy-1.3.jar [options] <path...>");
         logger.info("options: -h,--help  -v,--version  --dry-run  --replace  --skip-if-exists  --out-dir <dir>  --name-strategy <indexed|timestamp|uuid>");
     }
 

@@ -1,6 +1,8 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,20 +29,25 @@ public class CopyCli {
                 return ExitCodes.OK;
             }
 
-            if (options.inputPath == null) {
-                throw new CopyCliException(ExitCodes.INVALID_INPUT, "require ONE path");
+            if (options.inputPaths.isEmpty()) {
+                throw new CopyCliException(ExitCodes.INVALID_INPUT, "require at least ONE path");
             }
 
             if (options.outputDir != null && !options.dryRun) {
                 Files.createDirectories(options.outputDir);
             }
 
-            final Path outputPath = OutputPathResolver.buildOutputPath(
-                    options.inputPath,
-                    options.outputDir,
-                    options.nameStrategy
-            );
-            new CopyProcessor(LOGGER).copy(options.inputPath, outputPath, options);
+            final CopyProcessor copyProcessor = new CopyProcessor(LOGGER);
+            final Set<Path> reservedOutputPaths = new HashSet<>();
+            for (Path inputPath : options.inputPaths) {
+                final Path outputPath = OutputPathResolver.buildOutputPath(
+                        inputPath,
+                        options.outputDir,
+                        options.nameStrategy,
+                        reservedOutputPaths
+                );
+                copyProcessor.copy(inputPath, outputPath, options);
+            }
             LOGGER.info("finish");
             return ExitCodes.OK;
         } catch (CopyCliException e) {
