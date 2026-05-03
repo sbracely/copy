@@ -8,8 +8,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Main {
     private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
@@ -47,13 +45,13 @@ public class Main {
     }
 
     private static Path parseInputPath(String[] args) throws AppException {
-        LOGGER.log(Level.INFO, "params = {0}", Arrays.toString(args));
+        LOGGER.log(Level.INFO, "params: {0}", Arrays.toString(args));
 
         if (args.length != 1) {
             throw new AppException(EXIT_INVALID_INPUT, "require ONE path");
         }
 
-        LOGGER.log(Level.INFO, "path = {0}", args[0]);
+        LOGGER.log(Level.INFO, "path: {0}", args[0]);
         final Path inputPath = Paths.get(args[0]).toAbsolutePath();
         if (!Files.exists(inputPath)) {
             throw new AppException(EXIT_INVALID_INPUT, "input path does not exist");
@@ -75,13 +73,10 @@ public class Main {
         final List<Path> createFileList = new LinkedList<>();
         final List<Path> visitFileFailedList = new LinkedList<>();
 
-        final Pattern pattern = Pattern.compile(inputPath.toString(), Pattern.LITERAL);
-        final String quoteReplacement = Matcher.quoteReplacement(outputPath.toString());
-
         Files.walkFileTree(inputPath, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                final Path directoryPath = getTargetPath(dir);
+                final Path directoryPath = outputPath.resolve(inputPath.relativize(dir));
                 Files.createDirectories(directoryPath);
                 createDirectoryList.add(directoryPath);
                 return FileVisitResult.CONTINUE;
@@ -89,7 +84,7 @@ public class Main {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                final Path outPutPath = getTargetPath(file);
+                final Path outPutPath = outputPath.resolve(inputPath.relativize(file));
                 copyFile(file, outPutPath);
                 createFileList.add(outPutPath);
                 return FileVisitResult.CONTINUE;
@@ -97,36 +92,26 @@ public class Main {
 
             @Override
             public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                LOGGER.log(Level.WARNING, "visit file failed path = " + file, exc);
+                LOGGER.log(Level.WARNING, "visit file failed path: " + file, exc);
                 visitFileFailedList.add(file);
                 return FileVisitResult.CONTINUE;
             }
-
-            /**
-             * build a path to the target
-             * @param path
-             *        the path to the file to copy
-             * @return the path to the target
-             */
-            private Path getTargetPath(Path path) {
-                return Paths.get(pattern.matcher(path.toString()).replaceFirst(quoteReplacement));
-            }
         });
 
-        LOGGER.info("create directory count = " + createDirectoryList.size());
-        createDirectoryList.forEach(path -> LOGGER.info(path.toString()));
+        LOGGER.info("created directory count: " + createDirectoryList.size());
+        createDirectoryList.forEach(path -> LOGGER.info("created directory: " + path));
 
-        LOGGER.info("create file count = " + createFileList.size());
-        createFileList.forEach(path -> LOGGER.info(path.toString()));
+        LOGGER.info("created file count: " + createFileList.size());
+        createFileList.forEach(path -> LOGGER.info("created file: " + path));
 
-        LOGGER.info("visit file failed count = " + visitFileFailedList.size());
-        visitFileFailedList.forEach(path -> LOGGER.warning(path.toString()));
+        LOGGER.info("visit file failed count: " + visitFileFailedList.size());
+        visitFileFailedList.forEach(path -> LOGGER.warning("visit file failed path: " + path));
 
     }
 
     private static void copyFile(Path inputPath, Path outputPath) throws IOException {
         Files.copy(inputPath, outputPath);
-        LOGGER.info("create file : " + outputPath);
+        LOGGER.info("created file: " + outputPath);
     }
 
     private static class AppException extends Exception {
