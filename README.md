@@ -10,13 +10,13 @@
 - use JDK built-in `java.util.logging` (JUL)
 
 ## Usage
-- download or build release copy-1.4.jar
+- download or build release copy-1.5.jar
 - install JRE 8+
-- `java -jar copy-1.4.jar [options] <path...>`
+- `java -jar copy-1.5.jar [options] <path...>`
 
 ## Options
 - `-h`, `--help`: show usage
-- `--out-dir <dir>`: write output to the specified directory
+- `-o`, `--out-dir <dir>`: write output to the specified directory
 
 ## Output path naming
 - output is created in the same parent directory as input
@@ -31,12 +31,12 @@
 
 ## Examples
 ### copy
-- `java -jar copy-1.4.jar fileName.suffix`
-- `java -jar copy-1.4.jar "file name.suffix"`
-- `java -jar copy-1.4.jar fileA.txt fileB.txt`
-- `java -jar copy-1.4.jar directoryName`
-- `java -jar copy-1.4.jar directoryA directoryB`
-- `java -jar copy-1.4.jar D:\foo\bar\fileName.suffix`
-- `java -jar copy-1.4.jar D:\foo\bar\directoryName`
-- `java -jar copy-1.4.jar /home/foo/bar/directoryName`
-- `java -jar copy-1.4.jar /home/foo/bar/fileName`
+- `java -jar copy-1.5.jar fileName.suffix`
+- `java -jar copy-1.5.jar "file name.suffix"`
+- `java -jar copy-1.5.jar fileA.txt fileB.txt`
+- `java -jar copy-1.5.jar directoryName`
+- `java -jar copy-1.5.jar directoryA directoryB`
+- `java -jar copy-1.5.jar D:\foo\bar\fileName.suffix`
+- `java -jar copy-1.5.jar D:\foo\bar\directoryName`
+- `java -jar copy-1.5.jar /home/foo/bar/directoryName`
+- `java -jar copy-1.5.jar /home/foo/bar/fileName`

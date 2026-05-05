@@ -57,7 +57,7 @@ final class CliArgumentParser {
     }
 
     static void printHelp() throws CopyCliException {
-        final String usage = "java -jar copy-1.4.jar [options] <path...>";
+        final String usage = "java -jar copy-1.5.jar [options] <path...>";
         final StringBuilder buffer = new StringBuilder();
         final HelpFormatter helpFormatter = HelpFormatter.builder()
                 .setHelpAppendable(new TextHelpAppendable(buffer))
