@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,10 +26,13 @@ class MainTest {
 
         assertEquals(0, runResult.exitCode);
 
-        List<Path> copiedFiles = Files.list(tempDir)
-                .filter(path -> !path.equals(sourceFile))
-                .filter(path -> path.getFileName().toString().equals("demo (1).txt"))
-                .collect(Collectors.toList());
+        List<Path> copiedFiles;
+        try (Stream<Path> paths = Files.list(tempDir)) {
+            copiedFiles = paths
+                    .filter(path -> !path.equals(sourceFile))
+                    .filter(path -> path.getFileName().toString().equals("demo (1).txt"))
+                    .collect(Collectors.toList());
+        }
         assertEquals(1, copiedFiles.size());
         assertEquals("hello", new String(Files.readAllBytes(copiedFiles.get(0)), StandardCharsets.UTF_8));
     }
@@ -45,11 +49,14 @@ class MainTest {
 
         assertEquals(0, runResult.exitCode);
 
-        List<Path> copiedDirs = Files.list(tempDir)
-                .filter(Files::isDirectory)
-                .filter(path -> !path.equals(sourceDir))
-                .filter(path -> path.getFileName().toString().equals("src (1)"))
-                .collect(Collectors.toList());
+        List<Path> copiedDirs;
+        try (Stream<Path> paths = Files.list(tempDir)) {
+            copiedDirs = paths
+                    .filter(Files::isDirectory)
+                    .filter(path -> !path.equals(sourceDir))
+                    .filter(path -> path.getFileName().toString().equals("src (1)"))
+                    .collect(Collectors.toList());
+        }
         assertEquals(1, copiedDirs.size());
 
         Path copiedFile = copiedDirs.get(0).resolve("nested").resolve("a.txt");
@@ -58,7 +65,7 @@ class MainTest {
     }
 
     @Test
-    void shouldReturnErrorWhenInputPathDoesNotExist() throws IOException {
+    void shouldReturnErrorWhenInputPathDoesNotExist() {
         Path missingFile = tempDir.resolve("missing.txt");
 
         RunResult runResult = run(missingFile);
@@ -82,9 +89,12 @@ class MainTest {
 
         assertEquals(0, runResult.exitCode);
         assertTrue(Files.exists(outDir));
-        long generatedFileCount = Files.list(outDir)
-                .filter(path -> path.getFileName().toString().equals("withOutDir.txt"))
-                .count();
+        long generatedFileCount;
+        try (Stream<Path> paths = Files.list(outDir)) {
+            generatedFileCount = paths
+                    .filter(path -> path.getFileName().toString().equals("withOutDir.txt"))
+                    .count();
+        }
         assertEquals(1, generatedFileCount);
     }
 
@@ -124,7 +134,7 @@ class MainTest {
         assertEquals(2, runResult.exitCode);
     }
 
-    private RunResult run(Path inputPath) throws IOException {
+    private RunResult run(Path inputPath) {
         int exitCode = CopyCli.run(new String[]{inputPath.toString()});
         return new RunResult(exitCode);
     }
