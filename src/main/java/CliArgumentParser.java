@@ -1,8 +1,4 @@
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 import org.apache.commons.cli.help.HelpFormatter;
 import org.apache.commons.cli.help.TextHelpAppendable;
 
@@ -23,7 +19,7 @@ final class CliArgumentParser {
     }
 
     static CopyOptions parseArguments(String[] args) throws CopyCliException {
-        LOGGER.log(Level.INFO, "params: {0}", Arrays.toString(args));
+        LOGGER.log(Level.INFO, "arguments: {0}", Arrays.toString(args));
         final Options cliOptions = buildCliOptions();
         final CommandLine commandLine;
         try {
@@ -36,19 +32,20 @@ final class CliArgumentParser {
         }
 
         final CopyOptions options = new CopyOptions();
-        options.showHelp = commandLine.hasOption("h");
+        options.showHelp = commandLine.hasOption("help");
+        if (options.showHelp) {
+            return options;
+        }
+
         if (commandLine.hasOption("out-dir")) {
             options.outputDir = parsePathArg(commandLine.getOptionValue("out-dir"), "--out-dir").toAbsolutePath();
         }
-        final List<String> positionalArgs = commandLine.getArgList();
 
         if (options.outputDir != null && Files.exists(options.outputDir) && !Files.isDirectory(options.outputDir)) {
             throw new CopyCliException(ExitCodes.INVALID_INPUT, "--out-dir must be a directory path");
         }
 
-        if (options.showHelp) {
-            return options;
-        }
+        final List<String> positionalArgs = commandLine.getArgList();
 
         if (positionalArgs.isEmpty()) {
             throw new CopyCliException(ExitCodes.INVALID_INPUT, "require at least ONE path");
@@ -74,10 +71,12 @@ final class CliArgumentParser {
     }
 
     private static Options buildCliOptions() {
-        final Options options = new Options();
-        options.addOption("h", "help", false, "show usage");
-        options.addOption(Option.builder().longOpt("out-dir").hasArg().argName("dir").desc("write output to the specified directory").get());
-        return options;
+        return new Options()
+                .addOption("h", "help", false, "show usage")
+                .addOption(
+                        Option.builder("o").longOpt("out-dir").hasArg().argName("dir")
+                                .desc("write output to the specified directory").get()
+                );
     }
 
     private static Path parseInputPath(String inputArg) throws CopyCliException {

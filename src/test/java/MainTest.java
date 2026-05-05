@@ -99,6 +99,41 @@ class MainTest {
     }
 
     @Test
+    void shouldSupportShortOutDirOption() throws IOException {
+        Path sourceFile = tempDir.resolve("shortOption.txt");
+        Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));
+        Path outDir = tempDir.resolve("short-output");
+
+        RunResult runResult = run("-o", outDir.toString(), sourceFile.toString());
+
+        assertEquals(0, runResult.exitCode);
+        assertTrue(Files.exists(outDir.resolve("shortOption.txt")));
+    }
+
+    @Test
+    void shouldCopyUsingAbsoluteInputPath() throws IOException {
+        Path sourceFile = tempDir.resolve("absolute-input.txt").toAbsolutePath();
+        Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));
+
+        RunResult runResult = run(sourceFile.toString());
+
+        assertEquals(0, runResult.exitCode);
+        assertTrue(Files.exists(sourceFile.getParent().resolve("absolute-input (1).txt")));
+    }
+
+    @Test
+    void shouldOutputToAbsoluteOutDir() throws IOException {
+        Path sourceFile = tempDir.resolve("absolute-out-source.txt");
+        Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));
+        Path outDir = tempDir.resolve("absolute-output").toAbsolutePath();
+
+        RunResult runResult = run("--out-dir", outDir.toString(), sourceFile.toAbsolutePath().toString());
+
+        assertEquals(0, runResult.exitCode);
+        assertTrue(Files.exists(outDir.resolve("absolute-out-source.txt")));
+    }
+
+    @Test
     void shouldAppendIndexWhenOutputFileNameAlreadyExists() throws IOException {
         Path sourceFile = tempDir.resolve("name.txt");
         Files.write(sourceFile, "hello".getBytes(StandardCharsets.UTF_8));

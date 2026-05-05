@@ -10,9 +10,9 @@ import java.util.logging.Logger;
 final class CopyProcessor {
     private static final Logger LOGGER = Logger.getLogger(CopyProcessor.class.getName());
 
-    CopyStats copy(Path inputPath, Path outputPath, CopyOptions options) throws IOException {
+    CopyStats copy(Path inputPath, Path outputPath) throws IOException {
         if (Files.isDirectory(inputPath)) {
-            return copyDirectory(inputPath, outputPath, options);
+            return copyDirectory(inputPath, outputPath);
         } else {
             final CopyStats copyStats = new CopyStats();
             copyFile(inputPath, outputPath);
@@ -21,7 +21,7 @@ final class CopyProcessor {
         }
     }
 
-    private CopyStats copyDirectory(Path inputPath, Path outputPath, CopyOptions options) throws IOException {
+    private CopyStats copyDirectory(Path inputPath, Path outputPath) throws IOException {
         final CopyStats copyStats = new CopyStats();
 
         Files.walkFileTree(inputPath, new SimpleFileVisitor<Path>() {

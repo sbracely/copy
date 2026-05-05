@@ -41,7 +41,7 @@ public class CopyCli {
                         options.outputDir,
                         reservedOutputPaths
                 );
-                CopyProcessor.CopyStats copyStats = copyProcessor.copy(inputPath, outputPath, options);
+                CopyProcessor.CopyStats copyStats = copyProcessor.copy(inputPath, outputPath);
                 totalCopyStats.merge(copyStats);
             }
             logCopySummary(totalCopyStats);
